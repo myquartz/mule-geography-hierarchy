@@ -41,7 +41,6 @@
         <db:derby-connection database="geography" subsubProtocol="classpath" transactionIsolation="READ_COMMITTED" />
     </db:config>
     <validation:config name="Validation_Config" doc:name="Validation Config" doc:id="0c791c6d-772a-4208-9aa2-fc5e641d0c04" />
-    <api-gateway:autodiscovery apiId="19306385" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="3f281f00-1584-4add-8e35-b8bae25f4c9a" flowRef="addresscode-main" />
     <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="d8505551-7b71-42a2-89ce-0e053f524fb4" basePath="/address/v1" followRedirects="false" enableCookies="false">
         <http:request-connection protocol="HTTPS" host="api.vietfi.net" port="443" />
     </http:request-config>
