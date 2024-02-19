@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation=" http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd  http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+    <http:listener-config name="addresscode-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+        <http:listener-interceptors>
+            <http:cors-interceptor>
+                <http:origins>
+                    <http:origin url="https://vietfi-api-data.s3.ap-southeast-1.amazonaws.com" accessControlMaxAge="10">
+                        <http:allowed-methods>
+                            <http:method methodName="POST" />
+                            <http:method methodName="GET" />
+                            <http:method methodName="OPTIONS" />
+                            <http:method methodName="PUT" />
+                            <http:method methodName="PATCH" />
+                        </http:allowed-methods>
+                        <http:allowed-headers>
+                            <http:header headerName="Content-Type" />
+                            <http:header headerName="Content-Length" />
+                            <http:header headerName="Accept-Encoding" />
+                            <http:header headerName="X-CSRF-Token" />
+                            <http:header headerName="Authorization" />
+                            <http:header headerName="Accept" />
+                            <http:header headerName="origin" />
+                            <http:header headerName="Cache-Control" />
+                            <http:header headerName="X-Requested-With" />
+                        </http:allowed-headers>
+                        <http:expose-headers>
+                            <http:header headerName="Content-Type" />
+                            <http:header headerName="Content-Length" />
+                            <http:header headerName="Authorization" />
+                            <http:header headerName="X-Requested-With" />
+                            <http:header headerName="Accept" />
+                        </http:expose-headers>
+                    </http:origin>
+                </http:origins>
+            </http:cors-interceptor>
+        </http:listener-interceptors>
+    </http:listener-config>
+    <apikit:config name="addresscode-config" api="resource::053dfaed-8a37-4648-9105-659b6c284098:addresscode:1.0.2:raml:zip:addresscode.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <db:config name="Database_Config" doc:name="Database Config" doc:id="e877b4dc-ba36-4888-93e1-3bf4676319e0">
+        <db:derby-connection database="geography" subsubProtocol="classpath" transactionIsolation="READ_COMMITTED" />
+    </db:config>
+    <validation:config name="Validation_Config" doc:name="Validation Config" doc:id="0c791c6d-772a-4208-9aa2-fc5e641d0c04" />
+    <api-gateway:autodiscovery apiId="19306385" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="3f281f00-1584-4add-8e35-b8bae25f4c9a" flowRef="addresscode-main" />
+    <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="d8505551-7b71-42a2-89ce-0e053f524fb4" basePath="/address/v1" followRedirects="false" enableCookies="false">
+        <http:request-connection protocol="HTTPS" host="api.vietfi.net" port="443" />
+    </http:request-config>
+    <http:listener-config name="HTTP_Listener_Console" doc:name="HTTP Listener config" doc:id="967085e0-cf6f-4dbf-b6b6-824c3d415960">
+        <http:listener-connection host="0.0.0.0" port="8089" />
+    </http:listener-config>
+    <flow name="addresscode-main">
+        <http:listener config-ref="addresscode-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="addresscode-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APP:NOT_FOUND" enableNotifications="true" logException="true">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Object not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus"><![CDATA[404]]></ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="addresscode-console">
+        <http:listener config-ref="HTTP_Listener_Console" path="/console/*" outputMimeType="text/plain">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="addresscode-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND" enableNotifications="true" logException="true">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\countries:addresscode-config">
+        <db:select doc:name="AllCountries" doc:id="b017f163-6b79-40c7-a80d-5c51d690f375" config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT iso3, country_name, nicename FROM sys_country]]></db:sql>
+        </db:select>
+        <ee:transform doc:name="Transform Message" doc:id="ec1690f9-f0dd-431d-8dc7-a035bfce8474">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	code: payload01.ISO3,
+	name: payload01.NICENAME
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\countries\(country_code)\divisions:addresscode-config">
+        <db:select doc:name="SelectFilterByCountry" doc:id="7abd4267-5725-4ba4-b83c-42a4478a2b3d" config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT country_iso3, division_cd, division_name, local_id FROM sys_division
+WHERE country_iso3 = :country_code]]></db:sql>
+            <db:input-parameters><![CDATA[#[output application/java
+---
+{
+	country_code: (attributes.uriParams.country_code default "")
+}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	country_code: payload01.COUNTRY_ISO3,
+	local_id: payload01.LOCAL_ID,
+	name: payload01.DIVISION_NAME,
+	division_code: payload01.DIVISION_CD
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\countries\(country_code)\divisions\(division_code)\subdivisions\(subdiv_local_id)\l2subdivisions:addresscode-config">
+        <db:select doc:name="Select" doc:id="9a7d152a-59a7-41c4-8fda-419d4950d7e4" config-ref="Database_Config">
+            <db:sql><![CDATA[select a.subdiv_cd, a.l2subdiv_cd, a.subdiv_name, b.division_cd, b.country_iso3
+from sys_division_sub a
+JOIN  sys_division b ON a.divisionid = b.divisionid
+where 
+a.subdiv_cd = :subdiv_local_id
+AND b.division_cd = :division_code
+and b.country_iso3 = :country_code
+ORDER BY a.subdiv_name]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+'country_code':attributes.uriParams.country_code,
+'division_code':attributes.uriParams.division_code,
+'subdiv_local_id':attributes.uriParams.subdiv_local_id
+}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	country_code: payload01.COUNTRY_ISO3,
+	local_id: payload01.L2SUBDIV_CD default "",
+	name: payload01.SUBDIV_NAME,
+	subdiv_local_id: payload01.SUBDIV_CD,
+	division_code: payload01.DIVISION_CD
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\countries\(country_code)\divisions\(division_code)\subdivisions:addresscode-config">
+        <db:select doc:name="Select" doc:id="ffabe363-6564-492d-b26f-316dbc9fb784" config-ref="Database_Config">
+            <db:sql><![CDATA[select a.subdiv_cd, a.subdiv_name, b.division_cd, b.country_iso3
+from sys_division_sub a
+JOIN  sys_division b ON a.divisionid = b.divisionid
+where 
+b.division_cd = :division_code
+and b.country_iso3 = :country_code
+ORDER BY a.subdiv_name]]></db:sql>
+            <db:parameter-types>
+                <db:parameter-type key="country_code" type="VARCHAR" />
+            </db:parameter-types>
+            <db:input-parameters><![CDATA[#[{
+	division_code: attributes.uriParams.division_code,
+	country_code: attributes.uriParams.country_code
+}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	country_code: payload01.COUNTRY_ISO3,
+	local_id: payload01.SUBDIV_CD,
+	name: payload01.SUBDIV_NAME,
+	division_code: payload01.DIVISION_CD
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\countries\(country_code):addresscode-config">
+        <db:query-single doc:name="Query single" doc:id="eb16367a-9ceb-4c77-afcc-609f355c6e2b" config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT iso3, country_name FROM sys_country WHERE iso3 = :country_code]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+country_code: attributes.uriParams.country_code
+}]]]></db:input-parameters>
+        </db:query-single>
+        <validation:is-true doc:id="650022ee-d118-4e7f-a2a4-6582a57122d2" doc:name="Is Not Empty" config-ref="Validation_Config" expression="#[sizeOf(payload) &gt; 0]">
+            <error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+        </validation:is-true>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	code: payload.ISO3,
+	name: payload.COUNTRY_NAME
+} as Object {
+	encoding: "UTF-8", mediaType: "application/json"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\countries\(country_code)\divisions\(division_code):addresscode-config">
+        <db:query-single doc:name="Query single" doc:id="82da3b95-6900-4175-a613-8f91fb3eeaa7" config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT country_iso3, division_cd, division_name, local_id FROM sys_division
+WHERE country_iso3 = :country_code AND division_cd = :division_code]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+'country_code':attributes.uriParams.country_code,
+'division_code':attributes.uriParams.division_code
+}]]]></db:input-parameters>
+        </db:query-single>
+        <validation:is-true doc:id="5fb5fe95-fbf2-4d76-b4e3-1d323f761dee" doc:name="Is Not Empty" config-ref="Validation_Config" expression="#[sizeOf(payload) &gt; 0]">
+            <error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+        </validation:is-true>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	country_code: payload.COUNTRY_ISO3,
+	local_id: (payload.LOCAL_ID default "000"),
+	name: payload.DIVISION_NAME,
+	division_code: payload.DIVISION_CD
+} as Object {
+	encoding: "UTF-8", mediaType: "application/json"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\countries\(country_code)\divisions\(division_code)\subdivisions\(subdiv_local_id)\l2subdivisions\(l2subdiv_local_id):addresscode-config">
+        <db:query-single doc:name="Query single" doc:id="25195202-fbf8-4393-8020-a762421a80b1" config-ref="Database_Config">
+            <db:sql><![CDATA[select a.subdiv_cd, a.l2subdiv_cd, a.subdiv_name, b.division_cd, b.country_iso3
+from sys_division_sub a
+JOIN  sys_division b ON a.divisionid = b.divisionid
+where 
+a.l2subdiv_cd = :l2subdiv_local_id
+AND a.subdiv_cd = :subdiv_local_id
+AND b.division_cd = :division_code
+and b.country_iso3 = :country_code
+ORDER BY a.subdiv_name]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+'country_code':attributes.uriParams.country_code,
+'division_code':attributes.uriParams.division_code,
+'subdiv_local_id':attributes.uriParams.subdiv_local_id,
+'l2subdiv_local_id':attributes.uriParams.l2subdiv_local_id
+}]]]></db:input-parameters>
+        </db:query-single>
+        <validation:is-true doc:id="423c30e2-069a-4415-bcf0-6a6d235826ce" doc:name="Is Not Empty" config-ref="Validation_Config" expression="#[sizeOf(payload) &gt; 0]">
+            <error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+        </validation:is-true>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	country_code: payload.COUNTRY_ISO3,
+	local_id: payload.L2SUBDIV_CD default "",
+	name: payload.SUBDIV_NAME,
+	subdiv_local_id: payload.SUBDIV_CD,
+	division_code: payload.DIVISION_CD
+} as Object {
+	encoding: "UTF-8", mediaType: "application/json"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\countries\(country_code)\divisions\(division_code)\subdivisions\(subdiv_local_id):addresscode-config">
+        <db:query-single doc:name="Query single" doc:id="9246c370-f76d-4e4e-8f63-34604adf0165" config-ref="Database_Config">
+            <db:sql><![CDATA[select a.subdiv_cd, a.subdiv_name, b.division_cd, b.country_iso3
+from sys_division_sub a
+JOIN  sys_division b ON a.divisionid = b.divisionid
+where 
+a.subdiv_cd = :subdiv_local_id
+AND b.division_cd = :division_code
+and b.country_iso3 = :country_code
+ORDER BY a.subdiv_name]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+'country_code':attributes.uriParams.country_code,
+'division_code':attributes.uriParams.division_code,
+'subdiv_local_id':attributes.uriParams.subdiv_local_id
+}]]]></db:input-parameters>
+        </db:query-single>
+        <validation:is-true doc:id="6b9a2bc8-41e9-4060-981e-4a83b6376a8d" doc:name="Is Not Empty" config-ref="Validation_Config" expression="#[sizeOf(payload) &gt; 0]">
+            <error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+        </validation:is-true>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	country_code: payload.COUNTRY_ISO3,
+	local_id: payload.SUBDIV_CD,
+	name: payload.SUBDIV_NAME,
+	division_code: payload.DIVISION_CD
+} as Object {
+	encoding: "UTF-8", mediaType: "application/json"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\address-guess:application\json:addresscode-config">
+        <http:request method="POST" doc:name="AWS API GW Request" doc:id="5535da4e-33d3-4923-9e6c-2b67c4c2b616" config-ref="HTTP_Request_configuration" path="/address">
+            <http:body><![CDATA[#[{
+	address_text: payload.address_text
+	
+}]]]></http:body>
+        </http:request>
+    </flow>
+</mule>
