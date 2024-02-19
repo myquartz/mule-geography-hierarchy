@@ -408,7 +408,7 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="post:\address-guess:application\json:addresscode-config">
-        <http:request method="POST" doc:name="AWS API GW Request" doc:id="5535da4e-33d3-4923-9e6c-2b67c4c2b616" config-ref="HTTP_Request_configuration" path="/address">
+        <http:request method="POST" doc:name="AWS API GW Request" doc:id="5535da4e-33d3-4923-9e6c-2b67c4c2b616" config-ref="HTTP_Request_configuration" path="/address-guess">
             <http:body><![CDATA[#[{
 	address_text: payload.address_text
 	
