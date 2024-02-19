@@ -3,11 +3,11 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>053dfaed-8a37-4648-9105-659b6c284098</groupId>
-	<artifactId>addresscodebackend</artifactId>
+	<artifactId>geography-hierarchy</artifactId>
 	<version>1.0.0</version>
 	<packaging>mule-application</packaging>
 
-	<name>AddressCodeBackend</name>
+	<name>GeographyHierarchyBackend</name>
 
 	<description/>
 	<properties>
@@ -122,5 +122,12 @@
 			</snapshots>
 		</pluginRepository>
 	</pluginRepositories>
-
+	
+	<distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/myquartz/mule-geography-hierarchy</url>
+        </repository>
+    </distributionManagement>
 </project>
