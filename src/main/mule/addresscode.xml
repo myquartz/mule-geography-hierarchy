@@ -342,92 +342,6 @@ payload map ( payload01 , indexOfPayload01 ) -> {
             </ee:message>
         </ee:transform>
     </flow>
-    <flow name="get:\countries\(country_code)\divisions:addresscode-config">
-        <db:select doc:name="SelectFilterByCountry" doc:id="7abd4267-5725-4ba4-b83c-42a4478a2b3d" config-ref="Database_Config">
-            <db:sql><![CDATA[SELECT country_iso3, division_cd, division_name, local_id FROM sys_division
-WHERE country_iso3 = :country_code]]></db:sql>
-            <db:input-parameters><![CDATA[#[output application/java
----
-{
-	country_code: (attributes.uriParams.country_code default "")
-}]]]></db:input-parameters>
-        </db:select>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-payload map ( payload01 , indexOfPayload01 ) -> {
-	country_code: payload01.COUNTRY_ISO3,
-	local_id: payload01.LOCAL_ID,
-	name: payload01.DIVISION_NAME,
-	division_code: payload01.DIVISION_CD
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\countries\(country_code)\divisions\(division_code)\subdivisions\(subdiv_local_id)\l2subdivisions:addresscode-config">
-        <db:select doc:name="Select" doc:id="9a7d152a-59a7-41c4-8fda-419d4950d7e4" config-ref="Database_Config">
-            <db:sql><![CDATA[select a.subdiv_cd, a.l2subdiv_cd, a.subdiv_name, b.division_cd, b.country_iso3
-from sys_division_sub a
-JOIN  sys_division b ON a.divisionid = b.divisionid
-where 
-a.subdiv_cd = :subdiv_local_id
-AND b.division_cd = :division_code
-and b.country_iso3 = :country_code
-ORDER BY a.subdiv_name]]></db:sql>
-            <db:input-parameters><![CDATA[#[{
-'country_code':attributes.uriParams.country_code,
-'division_code':attributes.uriParams.division_code,
-'subdiv_local_id':attributes.uriParams.subdiv_local_id
-}]]]></db:input-parameters>
-        </db:select>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-payload map ( payload01 , indexOfPayload01 ) -> {
-	country_code: payload01.COUNTRY_ISO3,
-	local_id: payload01.L2SUBDIV_CD default "",
-	name: payload01.SUBDIV_NAME,
-	subdiv_local_id: payload01.SUBDIV_CD,
-	division_code: payload01.DIVISION_CD
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\countries\(country_code)\divisions\(division_code)\subdivisions:addresscode-config">
-        <db:select doc:name="Select" doc:id="ffabe363-6564-492d-b26f-316dbc9fb784" config-ref="Database_Config">
-            <db:sql><![CDATA[select a.subdiv_cd, a.subdiv_name, b.division_cd, b.country_iso3
-from sys_division_sub a
-JOIN  sys_division b ON a.divisionid = b.divisionid
-where 
-b.division_cd = :division_code
-and b.country_iso3 = :country_code
-ORDER BY a.subdiv_name]]></db:sql>
-            <db:parameter-types>
-                <db:parameter-type key="country_code" type="VARCHAR" />
-            </db:parameter-types>
-            <db:input-parameters><![CDATA[#[{
-	division_code: attributes.uriParams.division_code,
-	country_code: attributes.uriParams.country_code
-}]]]></db:input-parameters>
-        </db:select>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-payload map ( payload01 , indexOfPayload01 ) -> {
-	country_code: payload01.COUNTRY_ISO3,
-	local_id: payload01.SUBDIV_CD,
-	name: payload01.SUBDIV_NAME,
-	division_code: payload01.DIVISION_CD
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
     <flow name="get:\countries\(country_code):addresscode-config">
         <db:query-single doc:name="Query single" doc:id="eb16367a-9ceb-4c77-afcc-609f355c6e2b" config-ref="Database_Config">
             <db:sql><![CDATA[SELECT iso3, country_name FROM sys_country WHERE iso3 = :country_code]]></db:sql>
@@ -448,6 +362,30 @@ output application/json
 	name: payload.COUNTRY_NAME
 } as Object {
 	encoding: "UTF-8", mediaType: "application/json"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+	<flow name="get:\countries\(country_code)\divisions:addresscode-config">
+        <db:select doc:name="SelectFilterByCountry" doc:id="7abd4267-5725-4ba4-b83c-42a4478a2b3d" config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT country_iso3, division_cd, division_name, local_id FROM sys_division
+WHERE country_iso3 = :country_code]]></db:sql>
+            <db:input-parameters><![CDATA[#[output application/java
+---
+{
+	country_code: (attributes.uriParams.country_code default "")
+}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	country_code: payload01.COUNTRY_ISO3,
+	local_id: payload01.LOCAL_ID,
+	name: payload01.DIVISION_NAME,
+	division_code: payload01.DIVISION_CD
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
@@ -480,7 +418,107 @@ output application/json
             </ee:message>
         </ee:transform>
     </flow>
-    <flow name="get:\countries\(country_code)\divisions\(division_code)\subdivisions\(subdiv_local_id)\l2subdivisions\(l2subdiv_local_id):addresscode-config">
+	<flow name="get:\countries\(country_code)\divisions\(division_code)\subdivisions:addresscode-config">
+        <db:select doc:name="Select" doc:id="ffabe363-6564-492d-b26f-316dbc9fb784" config-ref="Database_Config">
+            <db:sql><![CDATA[select a.subdiv_cd, a.l2subdiv_cd, a.subdiv_name, b.division_cd, b.country_iso3
+from sys_division_sub a
+JOIN  sys_division b ON a.divisionid = b.divisionid
+where 
+b.division_cd = :division_code
+and b.country_iso3 = :country_code
+AND a.l2subdiv_cd = '00000'
+ORDER BY a.subdiv_cd]]></db:sql>
+            <db:parameter-types>
+                <db:parameter-type key="country_code" type="VARCHAR" />
+            </db:parameter-types>
+            <db:input-parameters><![CDATA[#[{
+	division_code: attributes.uriParams.division_code,
+	country_code: attributes.uriParams.country_code
+}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	country_code: payload01.COUNTRY_ISO3,
+	local_id: payload01.SUBDIV_CD,
+	name: payload01.SUBDIV_NAME,
+	division_code: payload01.DIVISION_CD
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+	<flow name="get:\countries\(country_code)\divisions\(division_code)\subdivisions\(subdiv_local_id):addresscode-config">
+        <db:query-single doc:name="Query single" doc:id="9246c370-f76d-4e4e-8f63-34604adf0165" config-ref="Database_Config">
+            <db:sql><![CDATA[select a.subdiv_cd, a.subdiv_name, b.division_cd, b.country_iso3
+from sys_division_sub a
+JOIN  sys_division b ON a.divisionid = b.divisionid
+where 
+a.subdiv_cd = :subdiv_local_id
+AND b.division_cd = :division_code
+and b.country_iso3 = :country_code
+AND a.l2subdiv_cd = '00000'
+ORDER BY a.subdiv_name]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+'country_code':attributes.uriParams.country_code,
+'division_code':attributes.uriParams.division_code,
+'subdiv_local_id':attributes.uriParams.subdiv_local_id
+}]]]></db:input-parameters>
+        </db:query-single>
+        <validation:is-true doc:id="6b9a2bc8-41e9-4060-981e-4a83b6376a8d" doc:name="Is Not Empty" config-ref="Validation_Config" expression="#[sizeOf(payload) &gt; 0]">
+            <error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+        </validation:is-true>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	country_code: payload.COUNTRY_ISO3,
+	local_id: payload.SUBDIV_CD,
+	name: payload.SUBDIV_NAME,
+	division_code: payload.DIVISION_CD
+} as Object {
+	encoding: "UTF-8", mediaType: "application/json"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+	<flow name="get:\countries\(country_code)\divisions\(division_code)\subdivisions\(subdiv_local_id)\l2subdivisions:addresscode-config">
+        <db:select doc:name="Select" doc:id="9a7d152a-59a7-41c4-8fda-419d4950d7e4" config-ref="Database_Config">
+            <db:sql><![CDATA[select a.subdiv_cd, a.l2subdiv_cd, a.subdiv_name, b.division_cd, b.country_iso3
+from sys_division_sub a
+JOIN  sys_division b ON a.divisionid = b.divisionid
+where 
+a.subdiv_cd = :subdiv_local_id
+AND b.division_cd = :division_code
+and b.country_iso3 = :country_code
+AND a.l2subdiv_cd = '00000'
+ORDER BY a.subdiv_name]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+'country_code':attributes.uriParams.country_code,
+'division_code':attributes.uriParams.division_code,
+'subdiv_local_id':attributes.uriParams.subdiv_local_id
+}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	country_code: payload01.COUNTRY_ISO3,
+	local_id: payload01.L2SUBDIV_CD default "",
+	name: payload01.SUBDIV_NAME,
+	subdiv_local_id: payload01.SUBDIV_CD,
+	division_code: payload01.DIVISION_CD
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+	<flow name="get:\countries\(country_code)\divisions\(division_code)\subdivisions\(subdiv_local_id)\l2subdivisions\(l2subdiv_local_id):addresscode-config">
         <db:query-single doc:name="Query single" doc:id="25195202-fbf8-4393-8020-a762421a80b1" config-ref="Database_Config">
             <db:sql><![CDATA[select a.subdiv_cd, a.l2subdiv_cd, a.subdiv_name, b.division_cd, b.country_iso3
 from sys_division_sub a
@@ -511,41 +549,6 @@ output application/json
 	local_id: payload.L2SUBDIV_CD default "",
 	name: payload.SUBDIV_NAME,
 	subdiv_local_id: payload.SUBDIV_CD,
-	division_code: payload.DIVISION_CD
-} as Object {
-	encoding: "UTF-8", mediaType: "application/json"
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\countries\(country_code)\divisions\(division_code)\subdivisions\(subdiv_local_id):addresscode-config">
-        <db:query-single doc:name="Query single" doc:id="9246c370-f76d-4e4e-8f63-34604adf0165" config-ref="Database_Config">
-            <db:sql><![CDATA[select a.subdiv_cd, a.subdiv_name, b.division_cd, b.country_iso3
-from sys_division_sub a
-JOIN  sys_division b ON a.divisionid = b.divisionid
-where 
-a.subdiv_cd = :subdiv_local_id
-AND b.division_cd = :division_code
-and b.country_iso3 = :country_code
-ORDER BY a.subdiv_name]]></db:sql>
-            <db:input-parameters><![CDATA[#[{
-'country_code':attributes.uriParams.country_code,
-'division_code':attributes.uriParams.division_code,
-'subdiv_local_id':attributes.uriParams.subdiv_local_id
-}]]]></db:input-parameters>
-        </db:query-single>
-        <validation:is-true doc:id="6b9a2bc8-41e9-4060-981e-4a83b6376a8d" doc:name="Is Not Empty" config-ref="Validation_Config" expression="#[sizeOf(payload) &gt; 0]">
-            <error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
-        </validation:is-true>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-	country_code: payload.COUNTRY_ISO3,
-	local_id: payload.SUBDIV_CD,
-	name: payload.SUBDIV_NAME,
 	division_code: payload.DIVISION_CD
 } as Object {
 	encoding: "UTF-8", mediaType: "application/json"
