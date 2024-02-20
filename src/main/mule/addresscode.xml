@@ -369,7 +369,8 @@ output application/json
 	<flow name="get:\countries\(country_code)\divisions:addresscode-config">
         <db:select doc:name="SelectFilterByCountry" doc:id="7abd4267-5725-4ba4-b83c-42a4478a2b3d" config-ref="Database_Config">
             <db:sql><![CDATA[SELECT country_iso3, division_cd, division_name, local_id FROM sys_division
-WHERE country_iso3 = :country_code]]></db:sql>
+WHERE country_iso3 = :country_code
+ORDER BY divisionid]]></db:sql>
             <db:input-parameters><![CDATA[#[output application/java
 ---
 {
@@ -459,8 +460,7 @@ where
 a.subdiv_cd = :subdiv_local_id
 AND b.division_cd = :division_code
 and b.country_iso3 = :country_code
-AND a.l2subdiv_cd = '00000'
-ORDER BY a.subdiv_name]]></db:sql>
+AND a.l2subdiv_cd = '00000']]></db:sql>
             <db:input-parameters><![CDATA[#[{
 'country_code':attributes.uriParams.country_code,
 'division_code':attributes.uriParams.division_code,
@@ -495,8 +495,8 @@ where
 a.subdiv_cd = :subdiv_local_id
 AND b.division_cd = :division_code
 and b.country_iso3 = :country_code
-AND a.l2subdiv_cd = '00000'
-ORDER BY a.subdiv_name]]></db:sql>
+AND a.l2subdiv_cd <> '00000'
+ORDER BY a.l2subdiv_cd]]></db:sql>
             <db:input-parameters><![CDATA[#[{
 'country_code':attributes.uriParams.country_code,
 'division_code':attributes.uriParams.division_code,
